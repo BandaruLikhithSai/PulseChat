@@ -232,15 +232,7 @@
   color: var(--text-primary);
 }
 
-/* ── Mobile ──────────────────────────────────────────────────── */
-@media (max-width: 640px) {
-  .sidebar {
-    width: 100%;
-    min-width: 100%;
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-  }
-}
+/* ── Mobile — handled by AppLayout.css ──────────────────────── */
 
 /* ── User row (search results) ───────────────────────────────── */
 .sidebar__search-results {

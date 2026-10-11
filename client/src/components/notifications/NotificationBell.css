@@ -31,16 +31,16 @@
 
 /* ── Dropdown panel ──────────────────────────────────────────── */
 .notif-panel {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  width: 340px;
-  max-height: 420px;
+  position: fixed;          /* fixed so it's always relative to viewport */
+  top: 56px;                /* just below the header */
+  right: 12px;              /* always 12px from right edge of screen */
+  width: min(340px, calc(100vw - 24px));  /* never wider than viewport */
+  max-height: min(420px, calc(100dvh - 80px));
   background: var(--surface-1);
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-xl);
-  z-index: var(--z-dropdown);
+  z-index: var(--z-modal);  /* above everything */
   display: flex;
   flex-direction: column;
   animation: fade-in var(--transition-normal) ease;
@@ -198,9 +198,4 @@
   color: white;
 }
 
-@media (max-width: 480px) {
-  .notif-panel {
-    width: calc(100vw - 32px);
-    right: -16px;
-  }
-}
+/* Mobile: panel already uses fixed positioning + min(), no override needed */

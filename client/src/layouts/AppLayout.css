@@ -1,10 +1,10 @@
 /* ============================================================
-   AppLayout — three-column application shell
+   AppLayout — application shell
    ============================================================ */
 
 .app-shell {
   display: flex;
-  height: 100dvh;          /* dynamic viewport height — handles mobile browsers */
+  height: 100dvh;
   width: 100%;
   overflow: hidden;
   background: var(--bg-base);
@@ -13,7 +13,7 @@
 /* ── Main content area ───────────────────────────────────────── */
 .app-main {
   flex: 1;
-  min-width: 0;             /* prevents flex children from overflowing */
+  min-width: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -39,25 +39,44 @@
   animation: spin 0.8s linear infinite;
 }
 
-/* ── Responsive: tablet (hide details panel breakpoint used in Phase 4) */
-@media (max-width: 1100px) {
-  .app-details-panel {
-    display: none;
+/* ── Tablet: sidebar + chat side by side, no toggling needed ─── */
+/* Between 641px and 900px both panels are visible and narrower  */
+@media (min-width: 641px) and (max-width: 900px) {
+  .sidebar {
+    width: 260px;
+    min-width: 260px;
   }
 }
 
-/* ── Responsive: mobile ──────────────────────────────────────── */
+/* ── Mobile (≤ 640px): only one panel visible at a time ──────── */
 @media (max-width: 640px) {
   .app-shell {
-    flex-direction: column;
+    position: relative;
   }
 
-  /* On mobile, sidebar takes full width when no conversation is open.
-     The .chat-open class is toggled via JS in Phase 3. */
+  /* Sidebar takes full width */
+  .sidebar {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    min-width: 100%;
+    z-index: 10;
+    border-right: none;
+  }
+
+  /* Main takes full width, sits behind sidebar by default */
+  .app-main {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+  }
+
+  /* When a chat is open: show chat, hide sidebar */
   .app-shell.chat-open .sidebar {
     display: none;
   }
 
+  /* When no chat is open: show sidebar, hide main */
   .app-shell:not(.chat-open) .app-main {
     display: none;
   }
