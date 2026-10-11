@@ -23,14 +23,30 @@ import { Conversation } from '../models/Conversation.js';
  */
 
 function getIceServers() {
-  const servers = [{ urls: 'stun:stun.l.google.com:19302' }];
+  const servers = [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' },
+  ];
 
   const turnUrl  = process.env.TURN_URL;
   const turnUser = process.env.TURN_USERNAME;
   const turnCred = process.env.TURN_CREDENTIAL;
 
   if (turnUrl && turnUser && turnCred) {
-    servers.push({ urls: turnUrl, username: turnUser, credential: turnCred });
+    // Add multiple transport protocols for maximum compatibility
+    const baseUrl = turnUrl.replace(/^turn:/, '').replace(/:\d+$/, '').replace(/\?.*$/, '');
+    servers.push(
+      { urls: `turn:${baseUrl}:80`,   username: turnUser, credential: turnCred },
+      { urls: `turn:${baseUrl}:3478`, username: turnUser, credential: turnCred },
+      { urls: `turn:${baseUrl}:443?transport=tcp`, username: turnUser, credential: turnCred },
+      { urls: `turns:${baseUrl}:443`, username: turnUser, credential: turnCred }
+    );
+  } else {
+    // Fallback: well-known public TURN servers (less reliable, but better than nothing)
+    console.warn('[Call] No TURN server configured — cross-network calls may fail');
   }
 
   return servers;

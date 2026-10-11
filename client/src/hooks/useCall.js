@@ -139,8 +139,14 @@ export function useCall() {
           timerRef.current = setInterval(() => setDuration((s) => s + 1), 1000);
         }
       }
-      if (['failed','disconnected','closed'].includes(pc.connectionState)) {
-        setError('Connection lost.'); setCallState('failed');
+      // Only show failed after ICE has fully given up
+      if (pc.connectionState === 'failed') {
+        setError('Could not connect. Make sure both devices are on working internet and try again.');
+        setCallState('failed');
+      }
+      if (pc.connectionState === 'disconnected') {
+        // Temporary — don't fail immediately, might recover
+        log('Connection disconnected — waiting for possible recovery...');
       }
     };
 
@@ -150,6 +156,14 @@ export function useCall() {
         setCallState('connected');
         if (!timerRef.current) {
           timerRef.current = setInterval(() => setDuration((s) => s + 1), 1000);
+        }
+      }
+      // 'failed' means all ICE candidates exhausted — this is the TURN failure
+      if (pc.iceConnectionState === 'failed') {
+        log('ICE failed — likely no working TURN server. Trying ICE restart...');
+        // Try ICE restart which re-gathers candidates
+        if (pc.signalingState === 'stable' && pc.connectionState !== 'closed') {
+          pc.restartIce();
         }
       }
     };
