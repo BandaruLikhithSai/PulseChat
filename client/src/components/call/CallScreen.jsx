@@ -1,60 +1,62 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import './CallScreen.css';
 
 /**
  * CallScreen — full-screen overlay shown during an active call.
  *
- * Handles:
- *  - Calling / ringing states (with accept/reject for incoming)
- *  - Active call with local + remote video
- *  - Audio-only mode (no video tiles)
- *  - Mute / camera toggle
- *  - End call
- *  - Duration timer
- *  - Error display
+ * Key design: instead of using window events to attach streams, we register
+ * DOM element refs directly with the useCall hook via localVideoElRef,
+ * remoteVideoElRef, and remoteAudioElRef. This eliminates the race condition
+ * where the stream arrived before the element was mounted.
+ *
+ * A hidden <audio> element is always rendered so audio works even in
+ * audio-only calls (where there is no <video> element for remote stream).
  */
 export default function CallScreen({ call }) {
-  const { callState, callType, remoteName, remoteAvatar, incomingCall,
+  const {
+    callState, callType, remoteName, remoteAvatar, incomingCall,
     duration, audioEnabled, videoEnabled, error,
-    localStream, startCall, acceptCall, rejectCall, endCall,
-    toggleAudio, toggleVideo } = call;
+    localVideoElRef, remoteVideoElRef, remoteAudioElRef,
+    localStream, remoteStream,
+    acceptCall, rejectCall, endCall, toggleAudio, toggleVideo,
+    attachRemoteStream,
+  } = call;
 
-  const localVideoRef  = useRef(null);
-  const remoteVideoRef = useRef(null);
+  // Register DOM nodes with the hook as soon as they mount
+  const setLocalVideo = (el) => {
+    localVideoElRef.current = el;
+    // If stream already acquired (e.g. element mounted after getUserMedia), attach now
+    if (el && localStream.current) el.srcObject = localStream.current;
+  };
 
-  // Attach local stream
+  const setRemoteVideo = (el) => {
+    remoteVideoElRef.current = el;
+    if (el && remoteStream.current) el.srcObject = remoteStream.current;
+  };
+
+  const setRemoteAudio = (el) => {
+    remoteAudioElRef.current = el;
+    if (el && remoteStream.current) el.srcObject = remoteStream.current;
+  };
+
+  // Re-attach remote stream whenever call transitions to connected state
+  // (handles the case where ontrack fired before the element was rendered)
   useEffect(() => {
-    const attach = (e) => {
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = e.detail.stream;
-      }
-    };
-    window.addEventListener('call:local-stream', attach);
-    // If stream already exists
-    if (localStream.current && localVideoRef.current) {
-      localVideoRef.current.srcObject = localStream.current;
+    if ((callState === 'connected' || callState === 'connecting') && remoteStream.current) {
+      attachRemoteStream(remoteStream.current);
     }
-    return () => window.removeEventListener('call:local-stream', attach);
-  }, [localStream]);
+  }, [callState, attachRemoteStream, remoteStream]);
 
-  // Attach remote stream
-  useEffect(() => {
-    const attach = (e) => {
-      if (remoteVideoRef.current) {
-        remoteVideoRef.current.srcObject = e.detail.stream;
-      }
-    };
-    window.addEventListener('call:remote-stream', attach);
-    return () => window.removeEventListener('call:remote-stream', attach);
-  }, []);
-
-  // Don't render if idle
   if (callState === 'idle' && !incomingCall) return null;
 
   return (
     <div className="call-overlay" role="dialog" aria-modal="true" aria-label="Call">
 
-      {/* Incoming call notification */}
+      {/* ── Hidden audio element — always present for remote audio ── */}
+      {/* autoPlay is critical: without it Chrome/Firefox won't play audio */}
+      <audio ref={setRemoteAudio} autoPlay playsInline style={{ display: 'none' }} />
+
+      {/* ── Incoming call notification ── */}
       {incomingCall && callState === 'idle' && (
         <div className="call-incoming">
           <div className="call-incoming__avatar">
@@ -68,24 +70,26 @@ export default function CallScreen({ call }) {
             Incoming {incomingCall.type === 'video' ? '📹 video' : '📞 audio'} call…
           </p>
           <div className="call-incoming__actions">
-            <button className="call-btn call-btn--reject" onClick={() => rejectCall(incomingCall.sessionId)} aria-label="Reject">
+            <button className="call-btn call-btn--reject"
+              onClick={() => rejectCall(incomingCall.sessionId)} aria-label="Reject">
               <PhoneOffIcon />
             </button>
-            <button className="call-btn call-btn--accept" onClick={() => acceptCall(incomingCall)} aria-label="Accept">
+            <button className="call-btn call-btn--accept"
+              onClick={() => acceptCall(incomingCall)} aria-label="Accept">
               <PhoneIcon />
             </button>
           </div>
         </div>
       )}
 
-      {/* Active / connecting call */}
+      {/* ── Active / connecting call screen ── */}
       {callState !== 'idle' && (
         <div className={`call-screen ${callType === 'audio' ? 'call-screen--audio' : ''}`}>
 
-          {/* Remote video */}
+          {/* Remote: video tile or audio-only avatar */}
           {callType === 'video' ? (
             <video
-              ref={remoteVideoRef}
+              ref={setRemoteVideo}
               className="call-video call-video--remote"
               autoPlay
               playsInline
@@ -99,10 +103,10 @@ export default function CallScreen({ call }) {
             </div>
           )}
 
-          {/* Local video (picture-in-picture) */}
+          {/* Local video (picture-in-picture) — muted so no echo */}
           {callType === 'video' && (
             <video
-              ref={localVideoRef}
+              ref={setLocalVideo}
               className="call-video call-video--local"
               autoPlay
               playsInline
@@ -110,7 +114,7 @@ export default function CallScreen({ call }) {
             />
           )}
 
-          {/* Status bar */}
+          {/* Status */}
           <div className="call-status">
             <span className="call-status__name">{remoteName}</span>
             <span className="call-status__state">
@@ -128,7 +132,6 @@ export default function CallScreen({ call }) {
               className={`call-ctrl-btn ${!audioEnabled ? 'call-ctrl-btn--off' : ''}`}
               onClick={toggleAudio}
               aria-label={audioEnabled ? 'Mute microphone' : 'Unmute microphone'}
-              title={audioEnabled ? 'Mute' : 'Unmute'}
             >
               {audioEnabled ? <MicIcon /> : <MicOffIcon />}
             </button>
@@ -138,23 +141,17 @@ export default function CallScreen({ call }) {
                 className={`call-ctrl-btn ${!videoEnabled ? 'call-ctrl-btn--off' : ''}`}
                 onClick={toggleVideo}
                 aria-label={videoEnabled ? 'Turn off camera' : 'Turn on camera'}
-                title={videoEnabled ? 'Camera off' : 'Camera on'}
               >
                 {videoEnabled ? <VideoIcon /> : <VideoOffIcon />}
               </button>
             )}
 
-            <button
-              className="call-ctrl-btn call-ctrl-btn--end"
-              onClick={endCall}
-              aria-label="End call"
-              title="End call"
-            >
+            <button className="call-ctrl-btn call-ctrl-btn--end"
+              onClick={endCall} aria-label="End call">
               <PhoneOffIcon />
             </button>
           </div>
 
-          {/* Error */}
           {error && <p className="call-error">{error}</p>}
         </div>
       )}

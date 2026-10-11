@@ -1,45 +1,54 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSocket } from '../context/SocketContext.jsx';
 
-/**
- * useCall — manages a single WebRTC call session.
- *
- * Call states:
- *   idle        → no call
- *   calling     → we initiated, waiting for callee to accept
- *   ringing     → we received an invite, deciding whether to accept
- *   connecting  → both accepted, WebRTC negotiation in progress
- *   connected   → media flowing
- *   ended       → call finished
- *   failed      → error state
- *
- * Usage:
- *   const call = useCall();
- *   call.startCall(conversationId, calleeId, 'video');
- *   <CallScreen call={call} />
- */
 export function useCall() {
   const { getSocket, connected } = useSocket();
   const [callState, setCallState] = useState('idle');
-  const [callType, setCallType] = useState('video');   // 'audio' | 'video'
+  const [callType, setCallType] = useState('video');
   const [sessionId, setSessionId] = useState(null);
   const [remoteId, setRemoteId] = useState(null);
   const [remoteName, setRemoteName] = useState('');
   const [remoteAvatar, setRemoteAvatar] = useState(null);
   const [conversationId, setConversationId] = useState(null);
-  const [incomingCall, setIncomingCall] = useState(null); // { sessionId, callerId, ... }
+  const [incomingCall, setIncomingCall] = useState(null);
   const [duration, setDuration] = useState(0);
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [videoEnabled, setVideoEnabled] = useState(true);
   const [error, setError] = useState('');
 
-  const pcRef        = useRef(null);  // RTCPeerConnection
-  const localStream  = useRef(null);  // MediaStream (camera + mic)
-  const remoteStream = useRef(null);  // MediaStream from peer
-  const timerRef     = useRef(null);
-  const iceServersRef = useRef([{ urls: 'stun:stun.l.google.com:19302' }]);
+  const pcRef           = useRef(null);
+  const localStream     = useRef(null);
+  const remoteStream    = useRef(null);
+  const timerRef        = useRef(null);
+  const iceServersRef   = useRef([{ urls: 'stun:stun.l.google.com:19302' }]);
 
-  // ── Cleanup ───────────────────────────────────────────────────────────────
+  // These refs are set by CallScreen via the returned setters so we can
+  // attach streams directly without relying on window events or state timing.
+  const localVideoElRef  = useRef(null);  // set by CallScreen
+  const remoteVideoElRef = useRef(null);  // set by CallScreen
+  const remoteAudioElRef = useRef(null);  // set by CallScreen (audio-only calls)
+
+  // ── Helpers to attach streams to elements ─────────────────────────────────
+  const attachLocalStream = useCallback((stream) => {
+    localStream.current = stream;
+    if (localVideoElRef.current) {
+      localVideoElRef.current.srcObject = stream;
+    }
+  }, []);
+
+  const attachRemoteStream = useCallback((stream) => {
+    remoteStream.current = stream;
+    // Video element (video calls)
+    if (remoteVideoElRef.current) {
+      remoteVideoElRef.current.srcObject = stream;
+    }
+    // Audio element (audio-only calls, or as fallback)
+    if (remoteAudioElRef.current) {
+      remoteAudioElRef.current.srcObject = stream;
+    }
+  }, []);
+
+  // ── Cleanup ────────────────────────────────────────────────────────────────
   const cleanup = useCallback(() => {
     clearInterval(timerRef.current);
     if (localStream.current) {
@@ -50,6 +59,10 @@ export function useCall() {
       pcRef.current.close();
       pcRef.current = null;
     }
+    // Detach streams from elements
+    if (localVideoElRef.current)  localVideoElRef.current.srcObject  = null;
+    if (remoteVideoElRef.current) remoteVideoElRef.current.srcObject = null;
+    if (remoteAudioElRef.current) remoteAudioElRef.current.srcObject = null;
     setDuration(0);
   }, []);
 
@@ -68,7 +81,7 @@ export function useCall() {
   }, [cleanup]);
 
   // ── Build RTCPeerConnection ────────────────────────────────────────────────
-  function createPC(sid, targetId) {
+  const createPC = useCallback((sid, targetId) => {
     const pc = new RTCPeerConnection({ iceServers: iceServersRef.current });
     pcRef.current = pc;
 
@@ -78,44 +91,44 @@ export function useCall() {
       }
     };
 
+    // Fires when remote media arrives — attach directly to DOM elements
     pc.ontrack = (event) => {
-      remoteStream.current = event.streams[0];
-      // Dispatch custom event so CallScreen can attach to <video>
-      window.dispatchEvent(new CustomEvent('call:remote-stream', {
-        detail: { stream: event.streams[0] },
-      }));
+      const stream = event.streams[0];
+      remoteStream.current = stream;
+      attachRemoteStream(stream);
     };
 
     pc.onconnectionstatechange = () => {
       if (pc.connectionState === 'connected') {
         setCallState('connected');
-        // Start duration timer
         let secs = 0;
         timerRef.current = setInterval(() => setDuration(++secs), 1000);
       }
       if (['failed', 'disconnected', 'closed'].includes(pc.connectionState)) {
-        setError('Connection lost.');
+        setError('Connection lost. Check your network or try again.');
         setCallState('failed');
       }
     };
 
-    return pc;
-  }
+    // Log ICE state for debugging
+    pc.oniceconnectionstatechange = () => {
+      console.log('[WebRTC] ICE state:', pc.iceConnectionState);
+    };
 
-  // ── Initiate a call ───────────────────────────────────────────────────────
+    return pc;
+  }, [getSocket, attachRemoteStream]);
+
+  // ── Initiate a call ────────────────────────────────────────────────────────
   const startCall = useCallback(async (convId, calleeId, type = 'video', calleeName = '') => {
     setError('');
     setRemoteName(calleeName);
     try {
       const constraints = {
         audio: true,
-        video: type === 'video' ? { width: 1280, height: 720 } : false,
+        video: type === 'video' ? { width: { ideal: 1280 }, height: { ideal: 720 } } : false,
       };
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      localStream.current = stream;
-
-      // Dispatch so CallScreen can attach local <video>
-      window.dispatchEvent(new CustomEvent('call:local-stream', { detail: { stream } }));
+      attachLocalStream(stream);
 
       setCallState('calling');
       setCallType(type);
@@ -124,28 +137,26 @@ export function useCall() {
 
       getSocket()?.emit('call:invite', { conversationId: convId, calleeId, type }, (ack) => {
         if (ack?.error) { setError(ack.error); resetState(); }
-        else { setSessionId(ack?.sessionId); }
+        else setSessionId(ack?.sessionId);
       });
     } catch (err) {
-      const msg = err.name === 'NotAllowedError'
-        ? 'Camera/microphone permission denied.'
-        : err.name === 'NotFoundError'
-        ? 'No camera or microphone found.'
-        : `Could not access media: ${err.message}`;
+      const msg =
+        err.name === 'NotAllowedError' ? 'Camera/microphone permission denied.' :
+        err.name === 'NotFoundError'   ? 'No camera or microphone found.' :
+        `Could not access media: ${err.message}`;
       setError(msg);
       setCallState('failed');
     }
-  }, [getSocket, resetState]);
+  }, [getSocket, resetState, attachLocalStream]);
 
   // ── Accept an incoming call ────────────────────────────────────────────────
   const acceptCall = useCallback(async (incoming) => {
     const { sessionId: sid, callerId, type = 'video' } = incoming;
     setError('');
     try {
-      const constraints = { audio: true, video: type === 'video' ? true : false };
+      const constraints = { audio: true, video: type === 'video' };
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      localStream.current = stream;
-      window.dispatchEvent(new CustomEvent('call:local-stream', { detail: { stream } }));
+      attachLocalStream(stream);
 
       setCallState('connecting');
       setCallType(type);
@@ -160,147 +171,139 @@ export function useCall() {
         if (ack?.iceServers) iceServersRef.current = ack.iceServers;
 
         const pc = createPC(sid, callerId);
-        // Add local tracks
+        // Add all local tracks so caller will receive our audio/video
         stream.getTracks().forEach((t) => pc.addTrack(t, stream));
       });
     } catch (err) {
-      const msg = err.name === 'NotAllowedError'
-        ? 'Camera/microphone permission denied.'
-        : `Could not access media: ${err.message}`;
+      const msg =
+        err.name === 'NotAllowedError' ? 'Camera/microphone permission denied.' :
+        `Could not access media: ${err.message}`;
       setError(msg);
-      rejectCall(incoming.sessionId);
+      setCallState('failed');
+      getSocket()?.emit('call:reject', { sessionId: incoming.sessionId });
     }
-  }, [getSocket, resetState]);
+  }, [getSocket, resetState, createPC, attachLocalStream]);
 
-  // ── Reject an incoming call ────────────────────────────────────────────────
+  // ── Reject ────────────────────────────────────────────────────────────────
   const rejectCall = useCallback((sid) => {
     getSocket()?.emit('call:reject', { sessionId: sid ?? sessionId });
     resetState();
   }, [getSocket, resetState, sessionId]);
 
-  // ── End an active call ────────────────────────────────────────────────────
+  // ── End ───────────────────────────────────────────────────────────────────
   const endCall = useCallback(() => {
     if (sessionId) getSocket()?.emit('call:end', { sessionId });
     resetState();
   }, [getSocket, resetState, sessionId]);
 
-  // ── Toggle audio/video ────────────────────────────────────────────────────
+  // ── Toggle audio/video ─────────────────────────────────────────────────────
   const toggleAudio = useCallback(() => {
-    if (!localStream.current) return;
-    const track = localStream.current.getAudioTracks()[0];
+    const track = localStream.current?.getAudioTracks()[0];
     if (track) { track.enabled = !track.enabled; setAudioEnabled(track.enabled); }
   }, []);
 
   const toggleVideo = useCallback(() => {
-    if (!localStream.current) return;
-    const track = localStream.current.getVideoTracks()[0];
+    const track = localStream.current?.getVideoTracks()[0];
     if (track) { track.enabled = !track.enabled; setVideoEnabled(track.enabled); }
   }, []);
 
-  // ── Socket event listeners ────────────────────────────────────────────────
+  // ── Socket event listeners ─────────────────────────────────────────────────
   useEffect(() => {
     const socket = getSocket();
     if (!socket) return;
 
-    // Incoming call from another user
     const onIncoming = (data) => {
       setIncomingCall(data);
       setCallType(data.type || 'video');
     };
 
-    // Our call was accepted — create offer
     const onAccepted = async ({ sessionId: sid, calleeId, iceServers }) => {
       iceServersRef.current = iceServers || iceServersRef.current;
       setCallState('connecting');
       setRemoteId(calleeId);
 
       const pc = createPC(sid, calleeId);
+      // Add local tracks before creating offer
       if (localStream.current) {
         localStream.current.getTracks().forEach((t) => pc.addTrack(t, localStream.current));
       }
-
       try {
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
         socket.emit('call:offer', { sessionId: sid, targetId: calleeId, sdp: offer });
       } catch (err) {
-        setError('Failed to create WebRTC offer.');
+        console.error('[WebRTC] createOffer failed:', err);
+        setError('Failed to start call negotiation.');
         setCallState('failed');
       }
     };
 
-    // Receive an offer — create answer
     const onOffer = async ({ sessionId: sid, sdp, fromId }) => {
       const pc = pcRef.current;
-      if (!pc) return;
+      if (!pc) { console.error('[WebRTC] No RTCPeerConnection when offer arrived'); return; }
       try {
         await pc.setRemoteDescription(new RTCSessionDescription(sdp));
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
         socket.emit('call:answer', { sessionId: sid, targetId: fromId, sdp: answer });
       } catch (err) {
+        console.error('[WebRTC] answer failed:', err);
         setError('WebRTC negotiation failed.');
         setCallState('failed');
       }
     };
 
-    // Receive an answer
     const onAnswer = async ({ sdp }) => {
       const pc = pcRef.current;
       if (!pc) return;
       try {
         await pc.setRemoteDescription(new RTCSessionDescription(sdp));
-      } catch {}
+      } catch (err) {
+        console.error('[WebRTC] setRemoteDescription(answer) failed:', err);
+      }
     };
 
-    // Receive ICE candidate
     const onIce = async ({ candidate }) => {
       const pc = pcRef.current;
       if (!pc || !candidate) return;
       try {
         await pc.addIceCandidate(new RTCIceCandidate(candidate));
-      } catch {}
+      } catch (err) {
+        // Trickle ICE — some candidates may arrive before remote description; safe to ignore
+      }
     };
 
-    const onRejected = () => {
-      setError('Call was rejected.');
-      resetState();
-    };
+    const onRejected = () => { setError('Call was rejected.'); resetState(); };
+    const onEnded    = () => { resetState(); };
 
-    const onEnded = () => {
-      resetState();
-    };
-
-    socket.on('call:incoming',   onIncoming);
-    socket.on('call:accepted',   onAccepted);
-    socket.on('call:offer',      onOffer);
-    socket.on('call:answer',     onAnswer);
-    socket.on('call:ice',        onIce);
-    socket.on('call:rejected',   onRejected);
-    socket.on('call:ended',      onEnded);
+    socket.on('call:incoming',  onIncoming);
+    socket.on('call:accepted',  onAccepted);
+    socket.on('call:offer',     onOffer);
+    socket.on('call:answer',    onAnswer);
+    socket.on('call:ice',       onIce);
+    socket.on('call:rejected',  onRejected);
+    socket.on('call:ended',     onEnded);
 
     return () => {
-      socket.off('call:incoming',   onIncoming);
-      socket.off('call:accepted',   onAccepted);
-      socket.off('call:offer',      onOffer);
-      socket.off('call:answer',     onAnswer);
-      socket.off('call:ice',        onIce);
-      socket.off('call:rejected',   onRejected);
-      socket.off('call:ended',      onEnded);
+      socket.off('call:incoming',  onIncoming);
+      socket.off('call:accepted',  onAccepted);
+      socket.off('call:offer',     onOffer);
+      socket.off('call:answer',    onAnswer);
+      socket.off('call:ice',       onIce);
+      socket.off('call:rejected',  onRejected);
+      socket.off('call:ended',     onEnded);
     };
-  // connected ensures this re-runs once socket is ready after async init
-  }, [getSocket, resetState, connected]);
+  }, [getSocket, resetState, createPC, connected]);
 
-  // ── Cleanup on unmount ────────────────────────────────────────────────────
   useEffect(() => () => cleanup(), [cleanup]);
 
   return {
-    // State
     callState, callType, sessionId, remoteId, remoteName, remoteAvatar,
     conversationId, incomingCall, duration, audioEnabled, videoEnabled, error,
-    // Refs (for <video> elements)
     localStream, remoteStream,
-    // Actions
+    // Element ref setters — CallScreen calls these to register its DOM nodes
+    localVideoElRef, remoteVideoElRef, remoteAudioElRef,
     startCall, acceptCall, rejectCall, endCall, toggleAudio, toggleVideo,
+    attachRemoteStream, // exposed so CallScreen can re-attach on mount
   };
 }
