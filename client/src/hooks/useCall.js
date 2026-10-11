@@ -19,7 +19,7 @@ import { useSocket } from '../context/SocketContext.jsx';
  *   <CallScreen call={call} />
  */
 export function useCall() {
-  const { getSocket } = useSocket();
+  const { getSocket, connected } = useSocket();
   const [callState, setCallState] = useState('idle');
   const [callType, setCallType] = useState('video');   // 'audio' | 'video'
   const [sessionId, setSessionId] = useState(null);
@@ -103,8 +103,9 @@ export function useCall() {
   }
 
   // ── Initiate a call ───────────────────────────────────────────────────────
-  const startCall = useCallback(async (convId, calleeId, type = 'video') => {
+  const startCall = useCallback(async (convId, calleeId, type = 'video', calleeName = '') => {
     setError('');
+    setRemoteName(calleeName);
     try {
       const constraints = {
         audio: true,
@@ -287,7 +288,8 @@ export function useCall() {
       socket.off('call:rejected',   onRejected);
       socket.off('call:ended',      onEnded);
     };
-  }, [getSocket, resetState]);
+  // connected ensures this re-runs once socket is ready after async init
+  }, [getSocket, resetState, connected]);
 
   // ── Cleanup on unmount ────────────────────────────────────────────────────
   useEffect(() => () => cleanup(), [cleanup]);

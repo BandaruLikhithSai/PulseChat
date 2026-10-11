@@ -241,11 +241,17 @@ export function useMessages(conversationId) {
     const formData = new FormData();
     files.forEach((f) => formData.append('files', f));
     if (caption) formData.append('text', caption);
+    // Throws on error — caller (MessageComposer) must catch and show the error
     const res = await messageApi.uploadAttachments(conversationId, formData, onProgress);
     const msg = res.data.message;
-    setMessages((prev) => [...prev, msg]);
+    // Don't push to messages here — the socket room broadcast handles it.
+    // If the user is NOT in the socket room yet (e.g. REST-only) we add it locally.
+    const socket = getSocket();
+    if (!socket?.connected) {
+      setMessages((prev) => [...prev, msg]);
+    }
     return msg;
-  }, [conversationId]);
+  }, [conversationId, getSocket]);
 
   return {
     messages, loading, loadingOlder, hasMore, error, typingUsers,

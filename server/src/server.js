@@ -18,7 +18,10 @@ async function start() {
   const httpServer = http.createServer(app);
 
   // Attach Socket.IO to the same HTTP server
-  initSocket(httpServer);
+  const io = initSocket(httpServer);
+
+  // Make io accessible inside route handlers (e.g. attachment controller)
+  app.set('io', io);
 
   httpServer.listen(PORT, () => {
     console.log(

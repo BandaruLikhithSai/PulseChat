@@ -1,26 +1,21 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useOutletContext } from 'react-router-dom';
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { conversationApi } from '../services/api.js';
 import { useMessages } from '../hooks/useMessages.js';
-import { useCall } from '../hooks/useCall.js';
 import ChatHeader from '../components/chat/ChatHeader.jsx';
 import MessageList from '../components/chat/MessageList.jsx';
 import MessageComposer from '../components/chat/MessageComposer.jsx';
-import CallScreen from '../components/call/CallScreen.jsx';
 import './ChatPage.css';
 
 export default function ChatPage() {
   const { conversationId } = useParams();
-  const call = useCall();
+  // call comes from AppLayout via Outlet context — it lives there permanently
+  // so incoming calls work even when not in a chat.
+  const { call } = useOutletContext() ?? {};
 
   if (!conversationId) return <WelcomeScreen />;
-  return (
-    <>
-      <ConversationView conversationId={conversationId} call={call} />
-      <CallScreen call={call} />
-    </>
-  );
+  return <ConversationView conversationId={conversationId} call={call} />;
 }
 
 // ── Active conversation view ──────────────────────────────────────────────────

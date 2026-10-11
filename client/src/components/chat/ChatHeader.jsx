@@ -81,7 +81,7 @@ export default function ChatHeader({ conversation, currentUserId, onBack, call }
               title="Voice call"
               aria-label="Start voice call"
               disabled={callActive}
-              onClick={() => call.startCall(conversation._id, other?._id, 'audio')}
+              onClick={() => call.startCall(conversation._id, other?._id, 'audio', title)}
             >
               <PhoneCallIcon />
             </button>
@@ -90,7 +90,7 @@ export default function ChatHeader({ conversation, currentUserId, onBack, call }
               title="Video call"
               aria-label="Start video call"
               disabled={callActive}
-              onClick={() => call.startCall(conversation._id, other?._id, 'video')}
+              onClick={() => call.startCall(conversation._id, other?._id, 'video', title)}
             >
               <VideoCallIcon />
             </button>

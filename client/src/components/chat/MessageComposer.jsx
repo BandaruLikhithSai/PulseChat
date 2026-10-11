@@ -96,11 +96,15 @@ export default function MessageComposer({
         await onSendFiles?.(files, text.trim(), setUploadProgress);
         setFiles([]);
         setUploadProgress(null);
+        setText('');
       }
       if (hasText && !hasFiles) {
         await onSend?.(text.trim());
+        setText('');
       }
-      setText('');
+    } catch (err) {
+      // Show the error from the server (e.g. Cloudinary not configured)
+      setFileError(err.message || 'Upload failed. Please try again.');
     } finally {
       setSending(false);
       setUploadProgress(null);

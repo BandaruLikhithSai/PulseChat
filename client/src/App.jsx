@@ -20,6 +20,7 @@ export default function App() {
                 <Route path="/" element={<ChatPage />} />
                 <Route path="/chat/:conversationId" element={<ChatPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/profile/:userId" element={<ProfilePage />} />
               </Route>
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

@@ -1,7 +1,6 @@
 import { v2 as cloudinary } from 'cloudinary';
 import { Message } from '../models/Message.js';
 import { Conversation } from '../models/Conversation.js';
-import { Notification } from '../models/Notification.js';
 import { success, badRequest } from '../utils/apiResponse.js';
 
 const MAX_IMAGE_MB = parseInt(process.env.MAX_IMAGE_SIZE_MB || '10', 10);
@@ -21,6 +20,21 @@ const BLOCKED_TYPES = [
  */
 export async function uploadAttachment(req, res, next) {
   try {
+    // Guard: clear error if Cloudinary isn't configured
+    if (
+      !process.env.CLOUDINARY_CLOUD_NAME ||
+      !process.env.CLOUDINARY_API_KEY ||
+      !process.env.CLOUDINARY_API_SECRET
+    ) {
+      return res.status(503).json({
+        success: false,
+        message:
+          'File uploads are not available because Cloudinary is not configured. ' +
+          'Add CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET ' +
+          'to your environment variables.',
+      });
+    }
+
     const { conversationId } = req.params;
     const files = req.files;
 
@@ -33,22 +47,23 @@ export async function uploadAttachment(req, res, next) {
       const isImage = ALLOWED_IMAGE_TYPES.includes(file.mimetype);
       const limitBytes = (isImage ? MAX_IMAGE_MB : MAX_FILE_MB) * 1024 * 1024;
       if (file.size > limitBytes) {
-        return badRequest(res, `${file.originalname} exceeds the ${isImage ? MAX_IMAGE_MB : MAX_FILE_MB} MB limit.`);
+        return badRequest(
+          res,
+          `${file.originalname} exceeds the ${isImage ? MAX_IMAGE_MB : MAX_FILE_MB} MB limit.`
+        );
       }
     }
 
     // Upload all files to Cloudinary in parallel
-    const uploaded = await Promise.all(
-      files.map((file) => uploadToCloudinary(file))
-    );
+    const uploaded = await Promise.all(files.map(uploadToCloudinary));
 
     const attachments = uploaded.map((result, i) => ({
-      url:       result.secure_url,
-      publicId:  result.public_id,
-      type:      getAttachmentType(files[i].mimetype),
-      name:      files[i].originalname,
-      size:      files[i].size,
-      mimeType:  files[i].mimetype,
+      url:      result.secure_url,
+      publicId: result.public_id,
+      type:     getAttachmentType(files[i].mimetype),
+      name:     files[i].originalname,
+      size:     files[i].size,
+      mimeType: files[i].mimetype,
     }));
 
     const text = req.body.text?.trim() ?? '';
@@ -69,6 +84,19 @@ export async function uploadAttachment(req, res, next) {
       { path: 'sender', select: 'username displayName avatar' },
     ]);
 
+    // Broadcast to the conversation room via Socket.IO so other members
+    // see the attachment in real time (same as a regular text message)
+    const io = req.app.get('io');
+    if (io) {
+      const roomName = `conv:${conversationId}`;
+      io.to(roomName).emit('message:new', { message: populated });
+      io.to(roomName).emit('conversation:updated', {
+        conversationId,
+        lastMessage:  populated,
+        lastActivity: populated.createdAt,
+      });
+    }
+
     return success(res, { message: populated });
   } catch (err) {
     next(err);
@@ -82,7 +110,7 @@ function uploadToCloudinary(file) {
     const isImage = ALLOWED_IMAGE_TYPES.includes(file.mimetype);
     const stream = cloudinary.uploader.upload_stream(
       {
-        folder:        `pulsechat/attachments`,
+        folder:        'pulsechat/attachments',
         resource_type: isImage ? 'image' : 'raw',
         ...(isImage && {
           transformation: [{ quality: 'auto', fetch_format: 'auto' }],
@@ -95,8 +123,8 @@ function uploadToCloudinary(file) {
 }
 
 function getAttachmentType(mimeType) {
-  if (ALLOWED_IMAGE_TYPES.includes(mimeType))    return 'image';
-  if (mimeType.startsWith('video/'))              return 'video';
-  if (mimeType.startsWith('audio/'))              return 'audio';
+  if (ALLOWED_IMAGE_TYPES.includes(mimeType)) return 'image';
+  if (mimeType.startsWith('video/'))          return 'video';
+  if (mimeType.startsWith('audio/'))          return 'audio';
   return 'document';
 }
