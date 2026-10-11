@@ -1,0 +1,47 @@
+services:
+  - type: web
+    name: pulsechat-api
+    env: node
+    region: singapore
+    plan: free
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node src/server.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: COOKIE_SECRET
+        sync: false
+      - key: CLIENT_ORIGIN
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: RATE_LIMIT_WINDOW_MS
+        value: 900000
+      - key: RATE_LIMIT_MAX
+        value: 100
+      - key: AUTH_RATE_LIMIT_MAX
+        value: 10
+      - key: MAX_IMAGE_SIZE_MB
+        value: 10
+      - key: MAX_FILE_SIZE_MB
+        value: 25
+      - key: TURN_URL
+        sync: false
+      - key: TURN_USERNAME
+        sync: false
+      - key: TURN_CREDENTIAL
+        sync: false

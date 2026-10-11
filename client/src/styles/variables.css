@@ -1,0 +1,164 @@
+/* ============================================================
+   PulseChat Design Tokens
+   All colours, spacing, typography and shadow values are
+   defined here as CSS custom properties.  Every component
+   reads from these tokens — never hard-codes a value.
+   ============================================================ */
+
+:root {
+  /* ── Accent (indigo) ──────────────────────────────────────── */
+  --accent-50:  #eef2ff;
+  --accent-100: #e0e7ff;
+  --accent-200: #c7d2fe;
+  --accent-400: #818cf8;
+  --accent-500: #6366f1;   /* primary accent */
+  --accent-600: #4f46e5;
+  --accent-700: #4338ca;
+  --accent-900: #1e1b4b;
+
+  /* ── Neutral scale (light theme) ─────────────────────────── */
+  --gray-0:   #ffffff;
+  --gray-50:  #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+  --gray-950: #030712;
+
+  /* ── Semantic colour aliases — light theme ───────────────── */
+  --bg-base:        var(--gray-0);
+  --bg-subtle:      var(--gray-50);
+  --bg-muted:       var(--gray-100);
+  --bg-overlay:     rgba(0, 0, 0, 0.45);
+
+  --surface-1:      var(--gray-0);
+  --surface-2:      var(--gray-50);
+  --surface-3:      var(--gray-100);
+
+  --border:         var(--gray-200);
+  --border-strong:  var(--gray-300);
+
+  --text-primary:   var(--gray-900);
+  --text-secondary: var(--gray-500);
+  --text-muted:     var(--gray-400);
+  --text-inverse:   var(--gray-0);
+
+  --bubble-out-bg:      var(--accent-500);
+  --bubble-out-text:    var(--gray-0);
+  --bubble-in-bg:       var(--gray-100);
+  --bubble-in-text:     var(--gray-900);
+
+  --sidebar-bg:     var(--gray-0);
+  --sidebar-width:  320px;
+  --details-width:  300px;
+
+  /* ── Status colours ──────────────────────────────────────── */
+  --online:   #22c55e;
+  --away:     #f59e0b;
+  --offline:  var(--gray-300);
+  --error:    #ef4444;
+  --success:  #22c55e;
+  --warning:  #f59e0b;
+  --info:     var(--accent-500);
+
+  /* ── Typography ──────────────────────────────────────────── */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+               Oxygen, Ubuntu, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+
+  --text-xs:   0.75rem;   /* 12px */
+  --text-sm:   0.8125rem; /* 13px */
+  --text-base: 0.9375rem; /* 15px */
+  --text-md:   1rem;      /* 16px */
+  --text-lg:   1.125rem;  /* 18px */
+  --text-xl:   1.25rem;   /* 20px */
+  --text-2xl:  1.5rem;    /* 24px */
+
+  --weight-regular: 400;
+  --weight-medium:  500;
+  --weight-semibold: 600;
+  --weight-bold:    700;
+
+  --leading-tight:  1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+
+  /* ── Spacing scale ───────────────────────────────────────── */
+  --space-1:  0.25rem;  /*  4px */
+  --space-2:  0.5rem;   /*  8px */
+  --space-3:  0.75rem;  /* 12px */
+  --space-4:  1rem;     /* 16px */
+  --space-5:  1.25rem;  /* 20px */
+  --space-6:  1.5rem;   /* 24px */
+  --space-8:  2rem;     /* 32px */
+  --space-10: 2.5rem;   /* 40px */
+  --space-12: 3rem;     /* 48px */
+  --space-16: 4rem;     /* 64px */
+
+  /* ── Border radius ───────────────────────────────────────── */
+  --radius-sm:   0.25rem;
+  --radius-md:   0.5rem;
+  --radius-lg:   0.75rem;
+  --radius-xl:   1rem;
+  --radius-2xl:  1.5rem;
+  --radius-full: 9999px;
+
+  /* ── Shadows ─────────────────────────────────────────────── */
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.08);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.08);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.06);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.08);
+
+  /* ── Transitions ─────────────────────────────────────────── */
+  --transition-fast:   100ms ease;
+  --transition-normal: 200ms ease;
+  --transition-slow:   300ms ease;
+
+  /* ── Z-index layers ──────────────────────────────────────── */
+  --z-base:    0;
+  --z-raised:  10;
+  --z-dropdown: 100;
+  --z-sticky:  200;
+  --z-overlay: 300;
+  --z-modal:   400;
+  --z-toast:   500;
+  --z-call:    600;
+}
+
+/* ── Dark theme overrides ────────────────────────────────────── */
+[data-theme="dark"] {
+  --bg-base:        #0f1117;
+  --bg-subtle:      #161b22;
+  --bg-muted:       #21262d;
+  --bg-overlay:     rgba(0, 0, 0, 0.65);
+
+  --surface-1:      #161b22;
+  --surface-2:      #21262d;
+  --surface-3:      #2d333b;
+
+  --border:         #30363d;
+  --border-strong:  #484f58;
+
+  --text-primary:   #e6edf3;
+  --text-secondary: #8b949e;
+  --text-muted:     #6e7681;
+  --text-inverse:   #0f1117;
+
+  --bubble-out-bg:      var(--accent-600);
+  --bubble-out-text:    #ffffff;
+  --bubble-in-bg:       #21262d;
+  --bubble-in-text:     #e6edf3;
+
+  --sidebar-bg:     #161b22;
+
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.35), 0 1px 2px -1px rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.35), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.3);
+}

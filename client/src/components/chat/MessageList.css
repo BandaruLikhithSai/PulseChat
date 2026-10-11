@@ -1,0 +1,109 @@
+/* ============================================================
+   MessageList
+   ============================================================ */
+
+.message-list {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-2) 0 var(--space-3);
+  gap: 1px;
+  scroll-behavior: smooth;
+}
+
+/* Loading / error states */
+.message-list--loading,
+.message-list--error {
+  align-items: center;
+  justify-content: center;
+}
+
+.message-list__error-msg {
+  color: var(--error);
+  font-size: var(--text-sm);
+  text-align: center;
+  padding: var(--space-4);
+}
+
+/* Empty state */
+.message-list__empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+/* Load older */
+.message-list__load-older {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-3);
+}
+
+.message-list__load-btn {
+  font-size: var(--text-sm);
+  color: var(--accent-500);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--accent-200);
+  transition: background var(--transition-fast);
+}
+
+.message-list__load-btn:hover {
+  background: var(--accent-50);
+}
+
+[data-theme="dark"] .message-list__load-btn:hover {
+  background: color-mix(in srgb, var(--accent-500) 15%, transparent);
+}
+
+.message-list__spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent-500);
+  border-radius: var(--radius-full);
+  animation: spin 0.7s linear infinite;
+}
+
+/* ── Typing indicator ────────────────────────────────────────── */
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bubble-in-bg);
+  border-radius: var(--radius-xl);
+  border-bottom-left-radius: var(--radius-sm);
+  width: fit-content;
+  margin: var(--space-1) var(--space-4);
+}
+
+.typing-indicator span {
+  display: block;
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-full);
+  background: var(--text-muted);
+  animation: typing-bounce 1.2s ease-in-out infinite;
+}
+
+.typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30%            { transform: translateY(-6px); opacity: 1; }
+}
+
+.message-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  width: 100%;
+}

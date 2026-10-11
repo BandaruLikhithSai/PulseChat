@@ -1,0 +1,60 @@
+/* ============================================================
+   Avatar component
+   ============================================================ */
+
+.avatar {
+  position: relative;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+  overflow: visible; /* needed for status ring / dot */
+}
+
+.avatar__img {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+}
+
+.avatar__initials {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-full);
+  font-weight: var(--weight-semibold);
+  color: #fff;
+  user-select: none;
+}
+
+/* ── Colour variants ─────────────────────────────────────────── */
+.avatar--c1 { background: #6366f1; }
+.avatar--c2 { background: #8b5cf6; }
+.avatar--c3 { background: #ec4899; }
+.avatar--c4 { background: #f59e0b; }
+.avatar--c5 { background: #10b981; }
+.avatar--c6 { background: #3b82f6; }
+.avatar--c7 { background: #ef4444; }
+.avatar--c8 { background: #06b6d4; }
+
+/* ── Online ring ─────────────────────────────────────────────── */
+.avatar--online .avatar__img,
+.avatar--online .avatar__initials {
+  box-shadow: 0 0 0 2px var(--bg-base), 0 0 0 4px var(--online);
+}
+
+/* ── Status dot ──────────────────────────────────────────────── */
+.avatar__status {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 26%;
+  height: 26%;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--bg-base);
+}
+
+.avatar__status--online  { background: var(--online); }
+.avatar__status--away    { background: var(--away); }
+.avatar__status--offline { background: var(--offline); }

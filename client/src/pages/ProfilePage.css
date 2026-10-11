@@ -1,0 +1,120 @@
+/* ============================================================
+   Profile page
+   ============================================================ */
+
+.profile-page {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: var(--space-8) var(--space-4);
+  overflow-y: auto;
+}
+
+.profile-card {
+  width: 100%;
+  max-width: 480px;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-8);
+  box-shadow: var(--shadow-md);
+}
+
+.profile-card__title {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  margin-bottom: var(--space-6);
+}
+
+/* ── Avatar section ──────────────────────────────────────────── */
+.profile-avatar-section {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.profile-avatar-wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.profile-avatar-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-overlay);
+  border-radius: var(--radius-full);
+}
+
+.profile-avatar-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* ── Buttons ─────────────────────────────────────────────────── */
+.btn--outline {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  height: 36px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+}
+
+.btn--outline:hover:not(:disabled) {
+  background: var(--bg-muted);
+  border-color: var(--border-strong);
+}
+
+.btn--outline:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Textarea ────────────────────────────────────────────────── */
+.form-textarea {
+  height: auto;
+  padding: var(--space-2) var(--space-3);
+  resize: vertical;
+  min-height: 72px;
+}
+
+/* ── Footer row ──────────────────────────────────────────────── */
+.profile-form-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.profile-saved-msg {
+  font-size: var(--text-sm);
+  color: var(--success);
+  font-weight: var(--weight-medium);
+  animation: fade-in var(--transition-normal) ease;
+}
+
+/* ── Meta info ───────────────────────────────────────────────── */
+.profile-meta {
+  margin-top: var(--space-6);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+@media (max-width: 480px) {
+  .profile-card {
+    padding: var(--space-6);
+  }
+}

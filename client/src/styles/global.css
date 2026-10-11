@@ -1,0 +1,88 @@
+/* ============================================================
+   Global styles — utilities and patterns used across the app.
+   ============================================================ */
+
+/* ── Scrollbar styling ───────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-400);
+}
+
+/* ── Layout utilities ────────────────────────────────────────── */
+.flex        { display: flex; }
+.flex-col    { display: flex; flex-direction: column; }
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.gap-1       { gap: var(--space-1); }
+.gap-2       { gap: var(--space-2); }
+.gap-3       { gap: var(--space-3); }
+.gap-4       { gap: var(--space-4); }
+.flex-1      { flex: 1; }
+.min-w-0     { min-width: 0; }
+.overflow-hidden { overflow: hidden; }
+.truncate    { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ── Typography utilities ────────────────────────────────────── */
+.text-xs      { font-size: var(--text-xs); }
+.text-sm      { font-size: var(--text-sm); }
+.text-base    { font-size: var(--text-base); }
+.text-lg      { font-size: var(--text-lg); }
+.text-secondary { color: var(--text-secondary); }
+.text-muted   { color: var(--text-muted); }
+.font-medium  { font-weight: var(--weight-medium); }
+.font-semibold { font-weight: var(--weight-semibold); }
+
+/* ── Skeleton loading animation ─────────────────────────────── */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+.skeleton {
+  background: var(--bg-muted);
+  border-radius: var(--radius-md);
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+/* ── Fade in animation ───────────────────────────────────────── */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fade-in var(--transition-normal) ease forwards;
+}
+
+/* ── Toast / notification slide-in ──────────────────────────── */
+@keyframes slide-in-right {
+  from { transform: translateX(110%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+/* ── Spin ────────────────────────────────────────────────────── */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

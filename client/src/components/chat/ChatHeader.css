@@ -1,0 +1,84 @@
+/* ============================================================
+   ChatHeader
+   ============================================================ */
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--border);
+  height: 60px;
+  flex-shrink: 0;
+}
+
+.chat-header--skeleton {
+  background: var(--surface-1);
+}
+
+/* Back button — hidden on desktop, shown on mobile */
+.chat-header__back {
+  display: none;
+}
+
+.chat-header__identity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-md);
+  transition: background var(--transition-fast);
+}
+
+.chat-header__identity:hover {
+  background: var(--bg-muted);
+}
+
+.chat-header__info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.chat-header__name {
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-header__subtitle {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.chat-header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+@media (max-width: 640px) {
+  .chat-header__back {
+    display: flex;
+  }
+}
+
+.chat-header__subtitle--online {
+  color: var(--online);
+}
+
+/* Loading skeleton row inside header */
+.chat-header__skeleton {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: 1;
+  padding: var(--space-1) var(--space-2);
+}

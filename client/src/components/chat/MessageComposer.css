@@ -1,0 +1,184 @@
+/* ============================================================
+   MessageComposer
+   ============================================================ */
+
+.composer {
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface-1);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.composer__inner {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  background: var(--bg-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+  transition: border-color var(--transition-fast);
+}
+
+.composer__inner:focus-within {
+  border-color: var(--accent-500);
+  background: var(--surface-1);
+}
+
+.composer__textarea {
+  flex: 1;
+  background: transparent;
+  border: none;
+  resize: none;
+  font-size: var(--text-base);
+  color: var(--text-primary);
+  line-height: 22px;
+  padding: var(--space-1) 0;
+  min-height: 38px;
+  max-height: 156px; /* 6 lines */
+  overflow-y: auto;
+  outline: none;
+}
+
+.composer__textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.composer__textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.composer__count {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  padding: 0 var(--space-1);
+  align-self: flex-end;
+  padding-bottom: var(--space-2);
+  user-select: none;
+}
+
+.composer__count--warn {
+  color: var(--warning);
+}
+
+.composer__send {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background: var(--accent-500);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background var(--transition-fast), transform var(--transition-fast), opacity var(--transition-fast);
+}
+
+.composer__send:hover:not(:disabled) {
+  background: var(--accent-600);
+  transform: scale(1.05);
+}
+
+.composer__send:disabled {
+  background: var(--border-strong);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.composer__hint {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: var(--space-1);
+  user-select: none;
+}
+
+@media (max-width: 480px) {
+  .composer__hint {
+    display: none;
+  }
+}
+
+/* ── Attach button ───────────────────────────────────────────── */
+.composer__attach {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  margin-right: var(--space-1);
+}
+.composer__attach:hover:not(:disabled) {
+  color: var(--accent-500);
+}
+
+/* ── File previews ───────────────────────────────────────────── */
+.composer__files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4) 0;
+}
+
+.composer__file-chip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--bg-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 4px var(--space-2);
+  max-width: 200px;
+}
+
+.composer__file-thumb {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+
+.composer__file-icon {
+  font-size: 20px;
+}
+
+.composer__file-name {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 120px;
+}
+
+.composer__file-remove {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  padding: 2px 4px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+.composer__file-remove:hover { background: var(--error); color: white; }
+
+/* ── Error & progress ────────────────────────────────────────── */
+.composer__error {
+  font-size: var(--text-xs);
+  color: var(--error);
+  padding: var(--space-1) var(--space-4);
+}
+
+.composer__progress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-4);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.composer__progress-bar {
+  height: 4px;
+  background: var(--accent-500);
+  border-radius: var(--radius-full);
+  transition: width 200ms linear;
+  flex: 1;
+}
