@@ -36,16 +36,29 @@ function getIceServers() {
   const turnCred = process.env.TURN_CREDENTIAL;
 
   if (turnUrl && turnUser && turnCred) {
-    // Add multiple transport protocols for maximum compatibility
-    const baseUrl = turnUrl.replace(/^turn:/, '').replace(/:\d+$/, '').replace(/\?.*$/, '');
-    servers.push(
-      { urls: `turn:${baseUrl}:80`,   username: turnUser, credential: turnCred },
-      { urls: `turn:${baseUrl}:3478`, username: turnUser, credential: turnCred },
-      { urls: `turn:${baseUrl}:443?transport=tcp`, username: turnUser, credential: turnCred },
-      { urls: `turns:${baseUrl}:443`, username: turnUser, credential: turnCred }
-    );
+    // Robustly clean domain/host (strip turn:, turns:, ports, query params, trailing slashes)
+    const baseHost = turnUrl
+      .replace(/^(turn|turns):/i, '')
+      .replace(/:\d+$/, '')
+      .replace(/\?.*$/, '')
+      .replace(/\/+$/, '')
+      .trim();
+
+    if (baseHost) {
+      // Provide standard UDP, TCP, and TLS ports for cross-network/firewall penetration
+      servers.push(
+        { urls: `turn:${baseHost}:80`,                  username: turnUser, credential: turnCred },
+        { urls: `turn:${baseHost}:80?transport=tcp`,    username: turnUser, credential: turnCred },
+        { urls: `turn:${baseHost}:3478`,                username: turnUser, credential: turnCred },
+        { urls: `turn:${baseHost}:3478?transport=tcp`,  username: turnUser, credential: turnCred },
+        { urls: `turn:${baseHost}:443`,                 username: turnUser, credential: turnCred },
+        { urls: `turn:${baseHost}:443?transport=tcp`,   username: turnUser, credential: turnCred },
+        { urls: `turns:${baseHost}:443`,                username: turnUser, credential: turnCred },
+        { urls: `turns:${baseHost}:443?transport=tcp`,  username: turnUser, credential: turnCred }
+      );
+    }
   } else {
-    // Fallback: well-known public TURN servers (less reliable, but better than nothing)
+    // Fallback: STUN only
     console.warn('[Call] No TURN server configured — cross-network calls may fail');
   }
 
@@ -86,7 +99,9 @@ export function registerCallHandlers(io, socket) {
         status: 'ringing',
       });
 
-      // Notify the callee on their personal room
+      const iceServers = getIceServers();
+
+      // Notify the callee on their personal room (with iceServers so callee has TURN ready before answering)
       io.to(`user:${calleeId}`).emit('call:incoming', {
         sessionId:      session._id,
         conversationId,
@@ -94,9 +109,10 @@ export function registerCallHandlers(io, socket) {
         callerName:     socket.user?.displayName || socket.user?.username,
         callerAvatar:   socket.user?.avatar,
         type,
+        iceServers,
       });
 
-      ack?.({ sessionId: session._id, status: 'ringing' });
+      ack?.({ sessionId: session._id, status: 'ringing', iceServers });
     } catch (err) {
       console.error('[Call] call:invite error:', err.message);
       ack?.({ error: 'Failed to start call.' });

@@ -117,7 +117,7 @@ export function useCall() {
 
     pc.onicecandidate = ({ candidate }) => {
       if (candidate) {
-        log('Sending ICE candidate to', targetId);
+        log(`Sending ICE candidate to ${targetId}: typ=${candidate.type} proto=${candidate.protocol} ${candidate.address || candidate.ip}:${candidate.port}`);
         getSocket()?.emit('call:ice', { sessionId: sid, targetId, candidate });
       } else {
         log('ICE gathering complete');
@@ -189,6 +189,10 @@ export function useCall() {
       getSocket()?.emit('call:invite', { conversationId: convId, calleeId, type }, (ack) => {
         log('call:invite ack', ack);
         if (ack?.error) { setError(ack.error); resetState(); return; }
+        if (ack?.iceServers?.length) {
+          iceServersRef.current = ack.iceServers;
+          log('Caller updated ICE servers from invite ack:', ack.iceServers.map(s => s.urls));
+        }
         sessionIdRef.current = ack?.sessionId;
         setSessionId(ack?.sessionId);
       });
@@ -201,8 +205,12 @@ export function useCall() {
   }, [getSocket, resetState, attachLocalStream]);
 
   const acceptCall = useCallback(async (incoming) => {
-    const { sessionId: sid, callerId, type = 'video' } = incoming;
+    const { sessionId: sid, callerId, type = 'video', iceServers } = incoming;
     log('acceptCall', { sid, callerId, type });
+    if (iceServers?.length) {
+      iceServersRef.current = iceServers;
+      log('Callee loaded ICE servers from incoming call:', iceServers.map(s => s.urls));
+    }
     setError('');
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -228,7 +236,20 @@ export function useCall() {
         if (ack?.error) { setError(ack.error); resetState(); return; }
         if (ack?.iceServers?.length) {
           iceServersRef.current = ack.iceServers;
-          log('Updated ICE servers from server:', ack.iceServers.map(s => s.urls));
+          log('Updated ICE servers from accept ack:', ack.iceServers.map(s => s.urls));
+          if (pcRef.current) {
+            try {
+              pcRef.current.setConfiguration({
+                iceServers: ack.iceServers,
+                iceTransportPolicy: 'all',
+                bundlePolicy: 'max-bundle',
+                rtcpMuxPolicy: 'require',
+              });
+              log('Applied updated ICE servers to PC via setConfiguration ✓');
+            } catch (cfgErr) {
+              log('setConfiguration warning:', cfgErr.message);
+            }
+          }
         }
       });
     } catch (err) {
@@ -266,6 +287,10 @@ export function useCall() {
 
     const onIncoming = (data) => {
       log('call:incoming received', data);
+      if (data.iceServers?.length) {
+        iceServersRef.current = data.iceServers;
+        log('ICE servers received in call:incoming:', data.iceServers.map(s => s.urls));
+      }
       setIncomingCall(data); setCallType(data.type || 'video');
     };
 
