@@ -37,13 +37,13 @@ function getIceServers() {
   const turnCred = process.env.TURN_CREDENTIAL;
 
   if (turnUrl && turnUser && turnCred) {
-    // Robustly clean domain/host (strip turn:, turns:, ports, query params, trailing slashes)
-    const baseHost = turnUrl
-      .replace(/^(turn|turns):/i, '')
-      .replace(/:\d+$/, '')
-      .replace(/\?.*$/, '')
-      .replace(/\/+$/, '')
-      .trim();
+    // Robust hostname extractor: strip schemas, paths, queries, and existing ports
+    let baseHost = turnUrl.trim();
+    baseHost = baseHost.replace(/^[a-z]+:\/\//i, '').replace(/^[a-z]+:/i, '');
+    baseHost = baseHost.split('?')[0];
+    baseHost = baseHost.split('/')[0];
+    baseHost = baseHost.replace(/:\d+$/, '');
+    baseHost = baseHost.trim();
 
     if (baseHost) {
       // Provide standard UDP, TCP, and TLS ports for cross-network/firewall penetration

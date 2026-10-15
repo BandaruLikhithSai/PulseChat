@@ -1,6 +1,39 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSocket } from '../context/SocketContext.jsx';
 
+function sanitizeIceServers(servers) {
+  if (!Array.isArray(servers)) return [];
+  const valid = [];
+  for (const s of servers) {
+    if (!s || !s.urls) continue;
+    const rawUrls = Array.isArray(s.urls) ? s.urls : [s.urls];
+    const cleanedUrls = [];
+    for (const raw of rawUrls) {
+      if (typeof raw !== 'string') continue;
+      let u = raw.trim();
+      // Fix accidentally duplicated ports like :80:80 or :443:443
+      u = u.replace(/(:\d+)+/g, (match) => {
+        const parts = match.split(':').filter(Boolean);
+        return parts.length > 0 ? `:${parts[parts.length - 1]}` : '';
+      });
+      // Validate schema and URL structure
+      if (/^(stun|stuns|turn|turns):[a-zA-Z0-9_.-]+(:\d+)?(\?.*)?$/i.test(u)) {
+        cleanedUrls.push(u);
+      }
+    }
+    if (cleanedUrls.length > 0) {
+      valid.push({
+        ...s,
+        urls: cleanedUrls.length === 1 ? cleanedUrls[0] : cleanedUrls,
+      });
+    }
+  }
+  return valid.length > 0 ? valid : [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+  ];
+}
+
 export function useCall() {
   const { getSocket, connected } = useSocket();
 
@@ -105,10 +138,11 @@ export function useCall() {
     pendingIceCandidates.current = [];
     remoteDescSet.current = false;
 
-    log('Creating RTCPeerConnection, ICE servers:', iceServersRef.current.map(s => s.urls));
+    const safeIceServers = sanitizeIceServers(iceServersRef.current);
+    log('Creating RTCPeerConnection, sanitized ICE servers:', safeIceServers.map(s => s.urls));
 
     const pc = new RTCPeerConnection({
-      iceServers: iceServersRef.current,
+      iceServers: safeIceServers,
       iceTransportPolicy: 'all',
       bundlePolicy: 'max-bundle',
       rtcpMuxPolicy: 'require',
@@ -235,12 +269,13 @@ export function useCall() {
         log('call:accept ack', ack);
         if (ack?.error) { setError(ack.error); resetState(); return; }
         if (ack?.iceServers?.length) {
-          iceServersRef.current = ack.iceServers;
-          log('Updated ICE servers from accept ack:', ack.iceServers.map(s => s.urls));
+          const safeServers = sanitizeIceServers(ack.iceServers);
+          iceServersRef.current = safeServers;
+          log('Updated ICE servers from accept ack:', safeServers.map(s => s.urls));
           if (pcRef.current) {
             try {
               pcRef.current.setConfiguration({
-                iceServers: ack.iceServers,
+                iceServers: safeServers,
                 iceTransportPolicy: 'all',
                 bundlePolicy: 'max-bundle',
                 rtcpMuxPolicy: 'require',
