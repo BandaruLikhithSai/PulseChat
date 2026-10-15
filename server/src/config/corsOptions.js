@@ -20,8 +20,13 @@ export function buildCorsOptions() {
 
       if (allowedOrigins.includes(origin)) return callback(null, true);
 
-      // Also allow any *.vercel.app preview URL during development
-      if (process.env.NODE_ENV !== 'production' && origin.endsWith('.vercel.app')) {
+      // Allow any *.onrender.com domain (frontend deployed on Render)
+      if (origin.endsWith('.onrender.com')) {
+        return callback(null, true);
+      }
+
+      // Also allow any *.vercel.app preview URL
+      if (origin.endsWith('.vercel.app')) {
         return callback(null, true);
       }
 
